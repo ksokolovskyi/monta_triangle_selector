@@ -1,0 +1,31 @@
+name: monta_triangle_selector
+description: "Monta Triangle Selector"
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  equatable: 2.0.5
+  flutter:
+    sdk: flutter
+  flutter_svg: 2.0.10+1
+  material_symbols_icons: 4.2719.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: 5.1.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+  
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
