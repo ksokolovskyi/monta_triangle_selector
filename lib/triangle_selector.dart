@@ -8,6 +8,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:monta_triangle_selector/triangle_model.dart';
 import 'package:monta_triangle_selector/triangle_selector_value.dart';
 
+const _maxSide = 300.0;
+
 /// {@template triangle_selector}
 /// Selector that is used to adjust the distribution of percentages among
 /// three vertices of a triangle using a single draggable thumb.
@@ -40,6 +42,16 @@ class TriangleSelector extends StatelessWidget {
       onChanged: onChanged,
       thumb: const _Thumb(),
       tapPicture: const _TapPicture(),
+      proxyBox: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxHeight: _maxSide,
+          maxWidth: _maxSide,
+        ),
+        child: const AspectRatio(
+          aspectRatio: 1,
+          child: SizedBox.expand(),
+        ),
+      ),
     );
   }
 }
@@ -98,6 +110,7 @@ class _TapPicture extends StatelessWidget {
 enum _TriangleSelectorSlot {
   thumb,
   tapPicture,
+  proxyBox,
 }
 
 class _TriangleSelector extends SlottedMultiChildRenderObjectWidget<
@@ -107,6 +120,7 @@ class _TriangleSelector extends SlottedMultiChildRenderObjectWidget<
     required this.onChanged,
     required this.thumb,
     required this.tapPicture,
+    required this.proxyBox,
   });
 
   final TriangleSelectorValue value;
@@ -117,6 +131,8 @@ class _TriangleSelector extends SlottedMultiChildRenderObjectWidget<
 
   final Widget tapPicture;
 
+  final Widget proxyBox;
+
   @override
   Iterable<_TriangleSelectorSlot> get slots => _TriangleSelectorSlot.values;
 
@@ -125,6 +141,7 @@ class _TriangleSelector extends SlottedMultiChildRenderObjectWidget<
     return switch (slot) {
       _TriangleSelectorSlot.thumb => thumb,
       _TriangleSelectorSlot.tapPicture => tapPicture,
+      _TriangleSelectorSlot.proxyBox => proxyBox,
     };
   }
 
@@ -177,16 +194,6 @@ class _RenderTriangleSelector extends RenderShiftedBox
       ..onTapCancel = _endInteraction
       ..gestureSettings = gestureSettings;
   }
-
-  /// The max allowed size for the selector.
-  static const _additionalConstraints = BoxConstraints(
-    maxHeight: 300,
-    maxWidth: 300,
-  );
-
-  /// The selector aspect ratio is set to 1, so the width will be equal to the
-  /// height.
-  static const _aspectRatio = 1.0;
 
   late PanGestureRecognizer _drag;
   late TapGestureRecognizer _tap;
@@ -251,6 +258,7 @@ class _RenderTriangleSelector extends RenderShiftedBox
 
   RenderBox get _thumb => childForSlot(_TriangleSelectorSlot.thumb)!;
   RenderBox get _tapPicture => childForSlot(_TriangleSelectorSlot.tapPicture)!;
+  RenderBox get _proxyBox => childForSlot(_TriangleSelectorSlot.proxyBox)!;
 
   @override
   void dispose() {
@@ -374,74 +382,14 @@ class _RenderTriangleSelector extends RenderShiftedBox
     _currentDragValue = Offset.zero;
   }
 
-  Size _applyAspectRatio(BoxConstraints constraints) {
-    assert(constraints.debugAssertIsValid());
-    assert(() {
-      if (!constraints.hasBoundedWidth && !constraints.hasBoundedHeight) {
-        throw FlutterError(
-          '$runtimeType has unbounded constraints.\n'
-          'This $runtimeType was given an aspect ratio of $_aspectRatio but '
-          'was given both unbounded width and unbounded height constraints. '
-          'Because both constraints were unbounded, this render object '
-          "doesn't know how much size to consume.",
-        );
-      }
-      return true;
-    }());
-
-    if (constraints.isTight) {
-      return constraints.smallest;
-    }
-
-    var width = constraints.maxWidth;
-    double height;
-
-    // We default to picking the height based on the width, but if the width
-    // would be infinite, that's not sensible so we try to infer the height
-    // from the width.
-    if (width.isFinite) {
-      height = width / _aspectRatio;
-    } else {
-      height = constraints.maxHeight;
-      width = height * _aspectRatio;
-    }
-
-    // Similar to RenderImage, we iteratively attempt to fit within the given
-    // constraints while maintaining the given aspect ratio. The order of
-    // applying the constraints is also biased towards inferring the height
-    // from the width.
-    if (width > constraints.maxWidth) {
-      width = constraints.maxWidth;
-      height = width / _aspectRatio;
-    }
-
-    if (height > constraints.maxHeight) {
-      height = constraints.maxHeight;
-      width = height * _aspectRatio;
-    }
-
-    if (width < constraints.minWidth) {
-      width = constraints.minWidth;
-      height = width / _aspectRatio;
-    }
-
-    if (height < constraints.minHeight) {
-      height = constraints.minHeight;
-      width = height * _aspectRatio;
-    }
-
-    return constraints.constrain(Size(width, height));
-  }
-
   @override
   @protected
   Size computeDryLayout(covariant BoxConstraints constraints) {
-    return _applyAspectRatio(_additionalConstraints.enforce(constraints));
+    return _proxyBox.computeDryLayout(constraints);
   }
 
   @override
   void performLayout() {
-    final constraints = this.constraints;
     size = computeDryLayout(constraints);
 
     _createTriangleModelIfNeeded(size);
@@ -474,7 +422,7 @@ class _RenderTriangleSelector extends RenderShiftedBox
     _cachedSize = size;
 
     final rect = Offset.zero & size;
-    final radius = rect.width * 8.0 / _additionalConstraints.maxWidth;
+    final radius = rect.width * 8.0 / _maxSide;
 
     _triangleModel = TriangleModel.fromRectAndRadius(rect, radius);
   }
