@@ -20,7 +20,10 @@ class App extends StatelessWidget {
           children: [
             Center(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 60,
+                ),
                 child: _TriangleSelector(),
               ),
             ),
@@ -63,6 +66,7 @@ class __TriangleSelectorState extends State<_TriangleSelector> {
       constraints: const BoxConstraints(maxWidth: 350),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           _Label(
             label: 'Save money',
@@ -70,13 +74,15 @@ class __TriangleSelectorState extends State<_TriangleSelector> {
             icon: Symbols.attach_money,
             iconColor: const Color(0xFF393746),
           ),
-          TriangleSelector(
-            value: _value,
-            onChanged: (value) {
-              setState(() {
-                _value = value;
-              });
-            },
+          Flexible(
+            child: TriangleSelector(
+              value: _value,
+              onChanged: (value) {
+                setState(() {
+                  _value = value;
+                });
+              },
+            ),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
